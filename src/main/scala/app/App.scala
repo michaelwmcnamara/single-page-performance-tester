@@ -37,7 +37,7 @@ object App {
     val editorialMobilePageweightFilename = "editorialpageweightdashboardmobile.html"
     val dotcomPageSpeedFilename = "dotcompagespeeddashboard.html"
 
-    val resultsFromPreviousTests = "resultsFromPreviousTests.csv"
+    val pageResults = "singlePageTestResults.csv"
 
     val alertsThatHaveBeenFixed = "alertsthathavebeenfixed.csv"
     val pagesWithInsecureElements = "pagesWithInsecureElements.csv"
@@ -173,7 +173,7 @@ object App {
     //  s3Interface.writeFileToS3(editorialDesktopPageweightFilename, editorialPageWeightDashboardDesktop.toString())
     //  s3Interface.writeFileToS3(editorialMobilePageweightFilename, editorialPageWeightDashboardMobile.toString())
     //  s3Interface.writeFileToS3(editorialPageweightFilename, editorialPageWeightDashboard.toString())
-      s3Interface.writeFileToS3(resultsFromPreviousTests, resultsToRecordCSVString)
+      s3Interface.writeFileToS3(pageResults, resultsToRecordCSVString)
     }
     else {
       val outputWriter = new LocalFileOperations
@@ -192,7 +192,7 @@ object App {
         println("problem writing local outputfile")
         System exit 1
       }*/
-      val writeSuccessAlertsRecord: Int = outputWriter.writeLocalResultFile(resultsFromPreviousTests, resultsToRecordCSVString)
+      val writeSuccessAlertsRecord: Int = outputWriter.writeLocalResultFile(pageResults, resultsToRecordCSVString)
       if (writeSuccessAlertsRecord != 0) {
         println("problem writing local outputfile")
         System exit 1
@@ -205,10 +205,10 @@ object App {
   def getResultPages(urlList: List[String], urlFragments: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String): List[(String, String)] = {
     val wpt: WebPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
     val desktopResults: List[(String, String)] = urlList.map(page => {
-      (page, wpt.sendPage(page))
+      (page, wpt.sendHighPriorityPage(page))
     })
     val mobileResults: List[(String, String)] = urlList.map(page => {
-      (page, wpt.sendMobile3GPage(page, wptLocation))
+      (page, wpt.sendHighPriorityMobile3GPage(page, wptLocation))
     })
     desktopResults ::: mobileResults
   }
