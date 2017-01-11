@@ -26,7 +26,6 @@ object App {
     println("Local Testing Flag is set to: " + iamTestingLocally.toString)
 
     val jobStart = DateTime.now
-    val startOfWeek = jobStart.minusDays(jobStart.getDayOfWeek).minusMillis(jobStart.getMillisOfDay)
     //  Define names of s3bucket, configuration and output Files
     val amazonDomain = "https://s3-eu-west-1.amazonaws.com"
     val s3BucketName = "capi-wpt-querybot"
@@ -39,26 +38,14 @@ object App {
 
     val pageResults = "singlePageTestResults.csv"
 
-    val alertsThatHaveBeenFixed = "alertsthathavebeenfixed.csv"
-    val pagesWithInsecureElements = "pagesWithInsecureElements.csv"
-    val duplicateResultList = "duplicateresultsfromlastrun.csv"
-    val runLog = "runLog.csv"
-
     // summary files
 
     val jobStartHour = jobStart.hourOfDay.getAsString
     val jobStartDayOfWeek = jobStart.dayOfWeek.getAsString
 
-    val runSummaryFile = "runLogs/runSummary" + jobStartDayOfWeek + "_" + jobStartHour + ".txt"
-    val pageWeightAlertSummaryFile = "runLogs/pageWeightAlertSummary" + jobStartDayOfWeek + "_" + jobStartHour + ".txt"
-    val interactiveAlertSummaryFile = "runLogs/interactiveAlertSummary" + jobStartDayOfWeek + "_" + jobStartHour + ".txt"
-
-
     //Define colors to be used for average values, warnings and alerts
     val averageColor: String = "#d9edf7"
     //    val warningColor: String = "#fcf8e3"
-    val warningColor: String = "rgba(227, 251, 29, 0.32)"
-    val alertColor: String = "#f2dede"
 
     //initialize combinedResultsLists - these will be used to sort and accumulate test results
     // for the combined page and for long term storage file
@@ -68,17 +55,10 @@ object App {
     //Initialize Page-Weight email alerts lists - these will be used to generate emails
 
     var articlePageWeightAlertList: List[PerformanceResultsObject] = List()
-    var liveBlogPageWeightAlertList: List[PerformanceResultsObject] = List()
-    var interactivePageWeightAlertList: List[PerformanceResultsObject] = List()
-    var frontsPageWeightAlertList: List[PerformanceResultsObject] = List()
-    var audioPageWeightAlertList: List[PerformanceResultsObject] = List()
-    var videoPageWeightAlertList: List[PerformanceResultsObject] = List()
 
     var pageWeightAnchorId: Int = 0
 
     //Initialize Interactive email alerts lists - these will be used to generate emails
-    var interactiveAlertList: List[PerformanceResultsObject] = List()
-    var gLabsAlertList: List[PerformanceResultsObject] = List()
 
 
     //Create new S3 Client
@@ -114,19 +94,14 @@ object App {
       System exit 1
     }
     println("config values ok")
-    val contentApiKey: String = configArray(0)
     val wptBaseUrl: String = configArray(1)
     val wptApiKey: String = configArray(2)
     val wptLocation: String = configArray(3)
-    val emailUsername: String = configArray(4)
-    val emailPassword: String = configArray(5)
-    val visualsApiUrl: String = configArray(6)
 
 
     // sendPageWeightAlert all urls to webpagetest at once to enable parallel testing by test agents
-    val urlsToSend: List[String] = List("https://www.theguardian.com/books/2017/jan/10/ruby-wax-defuse-my-depression-a-mindfulness-guide-for-the-frazzled")
-    println("Combined list of urls: \n" + urlsToSend)
-
+    
+    val urlsToSend: List[String] = args.toList.take(1)
     val resultUrlList: List[(String, String)] = getResultPages(urlsToSend, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
     // build result page listeners
     // first format alerts from previous test that arent in the new capi queries
