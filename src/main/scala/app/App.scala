@@ -10,7 +10,6 @@ import app.apiutils._
 import com.gu.contentapi.client.model.v1._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.joda.time.DateTime
-import sbt.complete.Completion
 
 import scala.collection.parallel.immutable.ParSeq
 import scala.io.Source
@@ -18,6 +17,9 @@ import scala.io.Source
 
 object App {
   def main(args: Array[String]) {
+    val suppliedUrl = args(0)
+    val exportPath = if(args(1).endsWith("/")){args(1)}else{args(1) + "/"}
+
     /*  This value stops the forces the config to be read and the output file to be written locally rather than reading and writing from/to S3
     #####################    this should be set to false before merging!!!!################*/
     val iamTestingLocally = false
@@ -31,12 +33,8 @@ object App {
     val s3BucketName = "capi-wpt-querybot"
     val configFileName = "config.conf"
 
-    val editorialPageweightFilename = "editorialpageweightdashboard.html"
-    val editorialDesktopPageweightFilename = "editorialpageweightdashboarddesktop.html"
-    val editorialMobilePageweightFilename = "editorialpageweightdashboardmobile.html"
-    val dotcomPageSpeedFilename = "dotcompagespeeddashboard.html"
 
-    val pageResults = "singlePageTestResults.csv"
+    val pageResults = exportPath + "singlePageTestResults.csv"
 
     // summary files
 
@@ -101,7 +99,6 @@ object App {
 
     // sendPageWeightAlert all urls to webpagetest at once to enable parallel testing by test agents
 
-    val suppliedUrl = args.toList.head
     val urlsToSend: List[String] = List(suppliedUrl, makeProdUrl(suppliedUrl))
     val resultUrlList: List[(String, String)] = getResultPages(urlsToSend, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
     // build result page listeners
@@ -144,36 +141,14 @@ object App {
     val resultsToRecordCSVString: String = resultsToRecord.map(_.toCSVString()).mkString
 
     //write combined results to file
-    if (!iamTestingLocally) {
-      println(DateTime.now + " Writing liveblog results to S3")
-    //  s3Interface.writeFileToS3(editorialDesktopPageweightFilename, editorialPageWeightDashboardDesktop.toString())
-    //  s3Interface.writeFileToS3(editorialMobilePageweightFilename, editorialPageWeightDashboardMobile.toString())
-    //  s3Interface.writeFileToS3(editorialPageweightFilename, editorialPageWeightDashboard.toString())
-      s3Interface.writeFileToS3(pageResults, resultsToRecordCSVString)
-    }
-    else {
+
+      println(DateTime.now + " Writing results to " + pageResults )
       val outputWriter = new LocalFileOperations
-      /*val writeSuccessPWDC: Int = outputWriter.writeLocalResultFile(editorialPageweightFilename, editorialPageWeightDashboard.toString())
+      val writeSuccessPWDC: Int = outputWriter.writeLocalResultFile(pageResults, resultsToRecordCSVString)
       if (writeSuccessPWDC != 0) {
         println("problem writing local outputfile")
         System exit 1
       }
-      val writeSuccessPWDD: Int = outputWriter.writeLocalResultFile(editorialDesktopPageweightFilename, editorialPageWeightDashboardDesktop.toString())
-      if (writeSuccessPWDD != 0) {
-        println("problem writing local outputfile")
-        System exit 1
-      }
-      val writeSuccessPWDM: Int = outputWriter.writeLocalResultFile(editorialMobilePageweightFilename, editorialPageWeightDashboardMobile.toString())
-      if (writeSuccessPWDM != 0) {
-        println("problem writing local outputfile")
-        System exit 1
-      }*/
-      val writeSuccessAlertsRecord: Int = outputWriter.writeLocalResultFile(pageResults, resultsToRecordCSVString)
-      if (writeSuccessAlertsRecord != 0) {
-        println("problem writing local outputfile")
-        System exit 1
-      }
-    }
 
 
   }
