@@ -82,16 +82,13 @@ class LocalFileOperations {
           data(13).toInt,
           data(14).toInt,
           data(15).toInt,
-          data(16),
-          data(17).toBoolean,
-          data(18).toBoolean,
-          data(19).toBoolean)
+          data(16).toInt,
+          data(17).toInt,
+          data(18),
+          data(19).toBoolean,
+          data(20).toBoolean,
+          data(21).toBoolean)
         //todo - get element list
-        val elementArray = data.drop(20)
-//        if(elementArray.nonEmpty) {
-//          println("\n\n\n Element Array \n" + elementArray.map(element => element.toString + "\n"))
-//          result.populateEditorialElementList(getElementListFromArray(elementArray))
-//        }
         result.setHeadline(Option(data(2)))
         result.setPageType(data(3))
         val firstPublishedTime: Option[CapiDateTime] = result.stringtoCAPITime(data(4))

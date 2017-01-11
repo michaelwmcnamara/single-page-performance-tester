@@ -1,9 +1,5 @@
 package app
 
-// note an _ instead of {} would get everything
-
-import java.io._
-import java.util
 
 import app.api._
 import app.apiutils._
@@ -12,7 +8,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.joda.time.DateTime
 
 import scala.collection.parallel.immutable.ParSeq
-import scala.io.Source
 
 
 object App {
@@ -29,12 +24,12 @@ object App {
 
     val jobStart = DateTime.now
     //  Define names of s3bucket, configuration and output Files
-    val amazonDomain = "https://s3-eu-west-1.amazonaws.com"
     val s3BucketName = "capi-wpt-querybot"
     val configFileName = "config.conf"
 
 
-    val pageResults = exportPath + "singlePageTestResults.csv"
+    val pageResults = exportPath + "performanceComparisonSummary.txt"
+    val pageList = exportPath + "performanceTestResults.csv"
 
     // summary files
 
@@ -52,7 +47,6 @@ object App {
 
     //Initialize Page-Weight email alerts lists - these will be used to generate emails
 
-    var articlePageWeightAlertList: List[PerformanceResultsObject] = List()
 
     var pageWeightAnchorId: Int = 0
 
@@ -109,12 +103,8 @@ object App {
       println("Generating average values for articles")
       val articleAverages: PageAverageObject = new ArticleDefaultAverages(averageColor)
       val articleResultsList = listenForResultPages(urlsToSend, "Article", resultUrlList, articleAverages, wptBaseUrl, wptApiKey, wptLocation, urlFragments)
-      val getAnchorId: (List[PerformanceResultsObject], Int) = applyAnchorId(articleResultsList, pageWeightAnchorId)
-      val articleResultsWithAnchor = getAnchorId._1
-      pageWeightAnchorId = getAnchorId._2
-
-      combinedResultsList = articleResultsWithAnchor
-      println("\n \n \n article tests complete. \n tested " + articleResultsWithAnchor.length + "pages")
+      combinedResultsList = articleResultsList
+      println("\n \n \n article tests complete. \n tested " + articleResultsList.length + "pages")
       println("Total number of results gathered so far " + combinedResultsList.length + "pages")
       println("Article Performance Test Complete")
 
@@ -122,35 +112,51 @@ object App {
       println("CAPI query found no article pages")
     }
 
-    val errorFreeSortedByWeightCombinedResults = for (result <- combinedResultsList if result.speedIndex > 0) yield result
-    val errorFreeCombinedListLength = errorFreeSortedByWeightCombinedResults.length
-    println("length of errorFreeSortedByWeightCombinedResults: " + errorFreeCombinedListLength)
+    val errorFreeCombinedResults = (for (result <- combinedResultsList if result.speedIndex > 0) yield result).toArray
+    val errorFreeCombinedListLength = errorFreeCombinedResults.length
 
-   // val editorialPageWeightDashboardDesktop = new PageWeightDashboardDesktop(sortedByWeightCombinedResults, sortedByWeightCombinedDesktopResults, sortedByWeightCombinedMobileResults)
-   // val editorialPageWeightDashboardMobile = new PageWeightDashboardMobile(sortedByWeightCombinedResults, sortedByWeightCombinedDesktopResults, sortedByWeightCombinedMobileResults)
-  //  val editorialPageWeightDashboard = new PageWeightDashboardTabbed(sortedByWeightCombinedResults, sortedByWeightCombinedDesktopResults, sortedByWeightCombinedMobileResults)
+    val ComparisonSummary: String = {if (errorFreeCombinedListLength == 4) {
+      val branchResult = errorFreeCombinedResults(0)
+      val prodResult = errorFreeCombinedResults(2)
 
-    // record results
-    val combinedResultsForFile = errorFreeSortedByWeightCombinedResults.filter(_.fullElementList.nonEmpty)
+      val TitleString = "Comparison of performance between your branch and prod: \n"
+      val StartRenderString = compareValues("Start-Render", branchResult.startRenderInMs, prodResult.startRenderInMs)
+      val VisuallyCompleteString = compareValues("Visually-Complete", branchResult.visualComplete, prodResult.visualComplete)
+      val SpeedIndexString = compareValues("SpeedIndex", branchResult.speedIndex, prodResult.speedIndex)
+      val PageWeightString = compareValues("PageWeight", branchResult.bytesInFullyLoaded, prodResult.bytesInFullyLoaded)
 
-    println("combinedResultsForFile length = " + combinedResultsForFile.length)
-    val resultsToRecord = combinedResultsForFile
-
-    //val resultsToRecord = (combinedResultsForFile ::: previousResultsWithElementsAdded).distinct
-    println("\n\n\n ***** There are " + resultsToRecord.length + " results to be saved to the previous results file  ********* \n\n\n")
-    val resultsToRecordCSVString: String = resultsToRecord.map(_.toCSVString()).mkString
+      TitleString + StartRenderString + VisuallyCompleteString + SpeedIndexString + PageWeightString
+      } else {
+       "We were unable to measure your pages performance. Please check local webpagetest instance is working."
+      }
+    }
 
     //write combined results to file
-
       println(DateTime.now + " Writing results to " + pageResults )
       val outputWriter = new LocalFileOperations
-      val writeSuccessPWDC: Int = outputWriter.writeLocalResultFile(pageResults, resultsToRecordCSVString)
-      if (writeSuccessPWDC != 0) {
+      val writeSuccessSummary: Int = outputWriter.writeLocalResultFile(pageResults, ComparisonSummary)
+      if (writeSuccessSummary != 0) {
         println("problem writing local outputfile")
         System exit 1
       }
+      val writeSuccessList: Int = outputWriter.writeLocalResultFile(pageList, combinedResultsList.map(_.toCSVString()).mkString)
+      if (writeSuccessList != 0) {
+      println("problem writing local outputfile")
+      System exit 1
+    }
 
+  }
 
+  def compareValues(valueName: String, branch: Int, prod: Int): String ={
+    if (branch > prod){
+      "Warning: " + valueName + " has increased by: " + (branch - prod).toDouble/prod.toDouble + "%.\n"
+    } else {
+      if (branch < prod) {
+        "Pass: " + valueName + " has decreased by: " + (prod - branch).toDouble/prod.toDouble + "%.\n"
+      } else {
+        "Pass: " + valueName + " is unchanged.\n"
+      }
+    }
   }
 
   def getResultPages(urlList: List[String], urlFragments: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String): List[(String, String)] = {
