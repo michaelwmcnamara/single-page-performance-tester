@@ -20,12 +20,12 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
   val wptResponseFormat:String = "xml"
   implicit val httpClient = new OkHttpClient()
 
-  val msmaxTime: Int = 6000000
-  val msTimeBetweenPings: Int = 30000
+  val msmaxTime: Int = 60000
+  val msTimeBetweenPings: Int = 10000
   val maxCount: Int = roundAt(0)(msmaxTime.toDouble / msTimeBetweenPings).toInt
 
-  val msmaxTimeForMultipleTests: Int = 1200000
-  val msTimeBetweenPingsForMultipleTests: Int = 5000
+  val msmaxTimeForMultipleTests: Int = 120000
+  val msTimeBetweenPingsForMultipleTests: Int = 10000
   val maxCountForMultipleTests: Int = roundAt(0)(msmaxTimeForMultipleTests.toDouble / msTimeBetweenPingsForMultipleTests).toInt
 
   var numberOfMultipleTestRequests: Int = 0
