@@ -254,6 +254,8 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
       val timeToFirstByte: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "TTFB").text.toInt
       val firstPaint: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "firstPaint").text.toInt
       println("firstPaint = " + firstPaint)
+      val startRender: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "render").text.toInt
+      println("start render = " + startRender)
       val docTime: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "docTime").text.toInt
       println("docTime = " + docTime)
       val bytesInDoc: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "bytesInDoc").text.toInt
@@ -264,10 +266,12 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
       println("Total bytes = " + totalbytesIn)
       val speedIndex: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "SpeedIndex").text.toInt
       println("SpeedIndex = " + speedIndex)
+      val visualComplete: Int = (rawXMLResult \\ "response" \ "data" \ "run" \ "firstView" \ "results" \ "visualComplete").text.toInt
+      println("Visually Complete = " + visualComplete)
       val status: String = "Test Success"
 
       println("Creating PerformanceResultsObject")
-      val result: PerformanceResultsObject = new PerformanceResultsObject(testUrl, testType, testSummaryPage, timeToFirstByte, firstPaint, docTime, bytesInDoc, fullyLoadedTime, totalbytesIn, speedIndex, status, false, false, false)
+      val result: PerformanceResultsObject = new PerformanceResultsObject(testUrl, testType, testSummaryPage, timeToFirstByte, startRender, firstPaint, docTime, bytesInDoc, fullyLoadedTime, totalbytesIn, speedIndex, visualComplete, status, false, false, false)
       println("sorting page element list")
       val sortedElementList = sortPageElementList(elementsList)
       println("populating full element list")
@@ -409,22 +413,26 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
         "Desktop"
       }
       val testSummaryPage: String = (rawXMLResult \\ "response" \ "data" \ "summary").text.toString
-      val timeToFirstByte: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "TTFB").text.toInt
-      val firstPaint: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "firstPaint").text.toInt
+      val timeToFirstByte: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "TTFB").text.toInt
+      val firstPaint: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "firstPaint").text.toInt
       println("firstPaint = " + firstPaint)
-      val docTime: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "docTime").text.toInt
+      val startRender: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "render").text.toInt
+      println("start render = " + startRender)
+      val docTime: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "docTime").text.toInt
       println("docTime = " + docTime)
-      val bytesInDoc: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "bytesInDoc").text.toInt
+      val bytesInDoc: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "bytesInDoc").text.toInt
       println("bytesInDoc = " + bytesInDoc)
-      val fullyLoadedTime: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "fullyLoaded").text.toInt
+      val fullyLoadedTime: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "fullyLoaded").text.toInt
       println("Time to Fully loaded = " + fullyLoadedTime)
-      val totalbytesIn: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "bytesIn").text.toInt
+      val totalbytesIn: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "bytesIn").text.toInt
       println("Total bytes = " + totalbytesIn)
-      val speedIndex: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "SpeedIndex").text.toInt
+      val speedIndex: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "SpeedIndex").text.toInt
       println("SpeedIndex = " + speedIndex)
+      val visualComplete: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "visualComplete").text.toInt
+      println("Visually Complete = " + visualComplete)
       val status: String = "Test Success"
       println("Creating PerformanceResultsObject")
-      val result: PerformanceResultsObject = new PerformanceResultsObject(testUrl, testType, testSummaryPage, timeToFirstByte, firstPaint, docTime, bytesInDoc, fullyLoadedTime, totalbytesIn, speedIndex, status, false, false, false)
+      val result: PerformanceResultsObject = new PerformanceResultsObject(testUrl, testType, testSummaryPage, timeToFirstByte, startRender, firstPaint, docTime, bytesInDoc, fullyLoadedTime, totalbytesIn, speedIndex, visualComplete, status, false, false, false)
       val sortedElementList = sortPageElementList(elementsList)
       result.fullElementList = sortedElementList
       result.populateEditorialElementList(sortedElementList)
@@ -488,7 +496,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
     val testType: String = if((rawResults \\ "response" \ "data" \ "from").text.toString.contains("Emulated Nexus 5")){"Android/3G"}else{"Desktop"}
     val testSummaryPage: String = (rawResults \\ "response" \ "data" \ "summary").text.toString
     val failComment: String = "No successful runs of test"
-    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, testSummaryPage, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failComment, false, false, true)
+    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, testSummaryPage, failIndicator, failIndicator, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failIndicator, failComment, false, false, true)
     failElement
   }
 
@@ -497,7 +505,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
     val testType: String = "Unknown"
     val failComment: String = "Test request timed out"
     // set warning status as result may have timed out due to very large page
-    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, failComment, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, resultUrl, true, true, true)
+    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, failComment, failIndicator, failIndicator, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failIndicator, failComment, false, false, true)
     failElement
   }
 
@@ -506,7 +514,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
     val testType: String = "Unknown"
     val failComment: String = "Test failed for unknown reason"
     // set warning status as result may have timed out due to very large page
-    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, failComment, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failComment, true, true, true)
+    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, failComment, failIndicator, failIndicator, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failIndicator, failComment, false, false, true)
     failElement
   }
 
