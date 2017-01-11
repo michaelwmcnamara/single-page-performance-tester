@@ -100,8 +100,9 @@ object App {
 
 
     // sendPageWeightAlert all urls to webpagetest at once to enable parallel testing by test agents
-    
-    val urlsToSend: List[String] = args.toList.take(1)
+
+    val suppliedUrl = args.toList.head
+    val urlsToSend: List[String] = List(suppliedUrl, makeProdUrl(suppliedUrl))
     val resultUrlList: List[(String, String)] = getResultPages(urlsToSend, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
     // build result page listeners
     // first format alerts from previous test that arent in the new capi queries
@@ -341,6 +342,15 @@ object App {
     }
   }
 
+  def makeProdUrl(url: String): String = {
+    if(url.take(4).contains("http")) {
+      val contentPath: List[String] = url.split("/").toList.drop(3).map(fragment => "/" + fragment)
+      (List("https://www.theguardian.com") ::: contentPath).mkString
+    } else {
+      val contentPath: List[String] = url.split("/").toList.drop(1).map(fragment => "/" + fragment)
+      (List("https://www.theguardian.com") ::: contentPath).mkString
+    }
+  }
 }
 
 
