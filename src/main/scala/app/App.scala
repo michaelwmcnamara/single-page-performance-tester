@@ -94,6 +94,7 @@ object App {
     // sendPageWeightAlert all urls to webpagetest at once to enable parallel testing by test agents
 
     val urlsToSend: List[String] = List(suppliedUrl, makeProdUrl(suppliedUrl))
+    println("Sending " + urlsToSend.length + " urls.")
     val resultUrlList: List[(String, String)] = getResultPages(urlsToSend, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
     // build result page listeners
     // first format alerts from previous test that arent in the new capi queries
@@ -112,16 +113,17 @@ object App {
       println("CAPI query found no article pages")
     }
 
+    combinedResultsList.foreach(result => "speedindex = " + println(result.speedIndex) + "\n")
     val errorFreeCombinedResults = (for (result <- combinedResultsList if result.speedIndex > 0) yield result).toArray
     val errorFreeCombinedListLength = errorFreeCombinedResults.length
 
     val ComparisonSummary: String = {if (errorFreeCombinedListLength == 4) {
-      val branchResult = errorFreeCombinedResults(0)
-      val prodResult = errorFreeCombinedResults(2)
+      val branchResult = errorFreeCombinedResults(2)
+      val prodResult = errorFreeCombinedResults(3)
 
       val TitleString = "Comparison of performance between your branch and prod: \n"
-      val StartRenderString = compareValues("Start-Render", branchResult.startRenderInMs, prodResult.startRenderInMs)
-      val VisuallyCompleteString = compareValues("Visually-Complete", branchResult.visualComplete, prodResult.visualComplete)
+      val StartRenderString = compareValues("Start-Render", branchResult.startRenderInMs - branchResult.timeToFirstByte, prodResult.startRenderInMs - prodResult.timeToFirstByte)
+      val VisuallyCompleteString = compareValues("Visually-Complete", branchResult.visualComplete - branchResult.timeToFirstByte , prodResult.visualComplete - prodResult.timeToFirstByte)
       val SpeedIndexString = compareValues("SpeedIndex", branchResult.speedIndex, prodResult.speedIndex)
       val PageWeightString = compareValues("PageWeight", branchResult.bytesInFullyLoaded, prodResult.bytesInFullyLoaded)
 
@@ -148,45 +150,71 @@ object App {
   }
 
   def compareValues(valueName: String, branch: Int, prod: Int): String ={
-    if (branch > prod){
-      "Warning: " + valueName + " has increased by: " + (branch - prod).toDouble/prod.toDouble + "%.\n"
-    } else {
-      if (branch < prod) {
-        "Pass: " + valueName + " has decreased by: " + (prod - branch).toDouble/prod.toDouble + "%.\n"
+    val percentageDifference: (String, Double) = {
+      if (branch > prod) {
+        ("Greater", roundAt(2)(((branch - prod).toDouble / prod.toDouble) * 100))
       } else {
-        "Pass: " + valueName + " is unchanged.\n"
+        if (branch < prod) {
+          ("Less", roundAt(2)(((prod - branch).toDouble / prod.toDouble) * 100))
+        } else {
+          ("Equal", 0.0)
+        }
+      }
+    }
+    if (percentageDifference._1.contains("Greater") && (percentageDifference._2 > 3)){
+      "Warning: " + valueName + " has increased by: " + percentageDifference._2 + "%.\n" +
+        "Value of: " + valueName + " on the live site is: " + prod + "\n" +
+        "Value of: " + valueName + " on your branch is: " + branch + "\n\n"
+    } else {
+      if (percentageDifference._1.contains("Less") && (percentageDifference._2 > 3)) {
+        "Pass: " + valueName + " has decreased by: " + percentageDifference._2 + "%.\n" +
+          "Value of " + valueName + " on the live site is: " + prod + "\n" +
+          "Value of " + valueName + " on your branch is: " + branch + "\n\n"
+      } else {
+        "Pass: " + "No change of any significance for " + valueName + ".\n\n" +
+          "Value of " + valueName + " on the live site is: " + prod + "\n" +
+          "Value of " + valueName + " on your branch is: " + branch + "\n\n"
       }
     }
   }
 
   def getResultPages(urlList: List[String], urlFragments: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String): List[(String, String)] = {
     val wpt: WebPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
-    val desktopResults: List[(String, String)] = urlList.map(page => {
+    /*val desktopResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.sendHighPriorityPage(page))
+    })*/
+    val desktopResults: List[(String, String)] = urlList.map(page => {
+      (page, wpt.testMultipleTimes(page,"Desktop", wptLocation ,5))
     })
-    val mobileResults: List[(String, String)] = urlList.map(page => {
+    /*val mobileResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.sendHighPriorityMobile3GPage(page, wptLocation))
+    })*/
+    val mobileResults: List[(String, String)] = urlList.map(page => {
+      (page, wpt.testMultipleTimes(page, "Android/3G", wptLocation, 5))
     })
+    println("number of requests sent: " + desktopResults.length + mobileResults.length)
     desktopResults ::: mobileResults
   }
 
   def listenForResultPages(capiPages: List[String], contentType: String, resultUrlList: List[(String, String)], averages: PageAverageObject, wptBaseUrl: String, wptApiKey: String, wptLocation: String, urlFragments: List[String]): List[PerformanceResultsObject] = {
     println("ListenForResultPages called with: \n\n" +
+      " Number of Urls: " + capiPages.length + "\n" +
       " List of Urls: \n" + capiPages.mkString +
-      "\n\nList of WebPage Test results: \n" + resultUrlList.mkString +
+      "\n\nNumber of WebPage Test results: " + capiPages.length + "\n" +
+      "List of WebPage Test results: \n" + resultUrlList.mkString +
       "\n\nList of averages: \n" + averages.toHTMLString + "\n")
 
     val listenerList: List[WptResultPageListener] = capiPages.flatMap(page => {
       for (element <- resultUrlList if element._1 == page) yield new WptResultPageListener(element._1, contentType, element._2)
     })
 
-    println("Listener List created: \n" + listenerList.map(element => "list element: \n" + "url: " + element.pageUrl + "\n" + "resulturl" + element.wptResultUrl + "\n"))
+    println("Listener List created: \n" + listenerList.map(element => "list element: \n" + "url: " + element.pageUrl + "\n" + "resulturl: " + element.wptResultUrl + "\n"))
 
     val resultsList: ParSeq[WptResultPageListener] = listenerList.par.map(element => {
       val wpt = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
       val newElement = new WptResultPageListener(element.pageUrl, element.pageType, element.wptResultUrl)
       println("getting result for page element: " + newElement.pageUrl)
-      newElement.testResults = wpt.getResults(newElement.pageUrl,newElement.wptResultUrl)
+      newElement.testResults = wpt.getMultipleResults(newElement.pageUrl,newElement.wptResultUrl)
       println("result received\n setting headline")
       newElement.testResults.setPageType(newElement.pageType)
       println("pagetype set\n setting FirstPublished")
@@ -199,18 +227,6 @@ object App {
     val resultsWithAlerts: List[PerformanceResultsObject] = testResults.map(element => setAlertStatus(element, averages))
     println("about to return list of results")
     resultsWithAlerts
-  }
-
-  def confirmAlert(initialResult: PerformanceResultsObject, averages: PageAverageObject, urlFragments: List[String],wptBaseUrl: String, wptApiKey: String, wptLocation: String): PerformanceResultsObject = {
-    val webPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
-    val testCount: Int = if (initialResult.timeToFirstByte > 1000) {
-      5
-    } else {
-      3
-    }
-    println("TTFB for " + initialResult.testUrl + "\n therefore setting test count of: " + testCount)
-    val AlertConfirmationTestResult: PerformanceResultsObject = setAlertStatus(webPageTest.testMultipleTimes(initialResult.testUrl, initialResult.typeOfTest, wptLocation, testCount), averages)
-    AlertConfirmationTestResult
   }
 
   def setAlertStatus(resultObject: PerformanceResultsObject, averages: PageAverageObject): PerformanceResultsObject = {
@@ -292,19 +308,6 @@ object App {
     pageAverages
   }
 
-
-  def retestUrl(initialResult: PerformanceResultsObject, wptBaseUrl: String, wptApiKey: String, wptLocation: String, urlFragments: List[String]): PerformanceResultsObject = {
-    val webPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
-    val testCount: Int = if (initialResult.timeToFirstByte > 1000) {
-      5
-    } else {
-      3
-    }
-    println("TTFB for " + initialResult.testUrl + "\n therefore setting test count of: " + testCount)
-    //   val AlertConfirmationTestResult: PerformanceResultsObject = setAlertStatusPageWeight(webPageTest.testMultipleTimes(initialResult.testUrl, initialResult.typeOfTest, wptLocation, testCount), averages)
-    webPageTest.testMultipleTimes(initialResult.testUrl, initialResult.typeOfTest, wptLocation, testCount)
-  }
-
   def applyAnchorId(resultsObjectList: List[PerformanceResultsObject], lastIDAssigned: Int): (List[PerformanceResultsObject], Int) = {
     var iterator = lastIDAssigned + 1
     val resultList = for (result <- resultsObjectList) yield {
@@ -332,6 +335,8 @@ object App {
       (List("https://www.theguardian.com") ::: contentPath).mkString
     }
   }
+
+  def roundAt(p: Int)(n: Double): Double = { val s = math pow (10, p); (math round n * s) / s }
 }
 
 
