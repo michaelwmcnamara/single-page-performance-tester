@@ -20,12 +20,12 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
   val wptResponseFormat:String = "xml"
   implicit val httpClient = new OkHttpClient()
 
-  val msmaxTime: Int = 60000
+  val msmaxTime: Int = 120000
   val msTimeBetweenPings: Int = 10000
   val maxCount: Int = roundAt(0)(msmaxTime.toDouble / msTimeBetweenPings).toInt
 
-  val msmaxTimeForMultipleTests: Int = 120000
-  val msTimeBetweenPingsForMultipleTests: Int = 10000
+  val msmaxTimeForMultipleTests: Int = 180000
+  val msTimeBetweenPingsForMultipleTests: Int = 20000
   val maxCountForMultipleTests: Int = roundAt(0)(msmaxTimeForMultipleTests.toDouble / msTimeBetweenPingsForMultipleTests).toInt
 
   var numberOfMultipleTestRequests: Int = 0
@@ -278,10 +278,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
       result.fullElementList = sortedElementList
       println("populating editorial element list")
       println("list length: " + sortedElementList.length)
-      //println("list contains: \n" + sortedElementList.map(_.toHTMLRowString() + "\n").mkString)
       result.populateEditorialElementList(sortedElementList)
-      //println("Result string: " + result.toHTMLSimpleTableCells())
-      //println("List of heaviest page Elements contains " + result.editorialElementList.length + " elements")
       println("Returning PerformanceResultsObject")
       result
     } catch {
@@ -292,7 +289,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
     }
   }
 
-  def testMultipleTimes(url: String, typeOfTest: String, wptLocation: String, testCount: Int): PerformanceResultsObject = {
+  def testMultipleTimes(url: String, typeOfTest: String, wptLocation: String, testCount: Int): String = {
       println("Alert registered on url: " + url + "\n" + "verify by retesting " + testCount + " times and taking median value")
       numberOfMultipleTestRequests += testCount
       if(typeOfTest.contains("Desktop")){
@@ -318,8 +315,9 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
         val responseXML: Elem = scala.xml.XML.loadString(response.body.string)
         val resultPage: String =  (responseXML \\ "xmlUrl").text
         println(resultPage)
-        val testResultObject: PerformanceResultsObject = getMultipleResults(url, resultPage)
-        testResultObject
+        //val testResultObject: PerformanceResultsObject = getMultipleResults(url, resultPage)
+        //testResultObject
+        resultPage
     }
     else{
         println("Forming mobile 3G webpage test query to confirm alert status")
@@ -347,8 +345,9 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
         val responseXML: Elem = scala.xml.XML.loadString(response.body.string)
         val resultPage: String =  (responseXML \\ "xmlUrl").text
         println(resultPage)
-        val testResultObject: PerformanceResultsObject = getMultipleResults(url, resultPage)
-        testResultObject
+        //val testResultObject: PerformanceResultsObject = getMultipleResults(url, resultPage)
+        //testResultObject
+        resultPage
       }
   }
 
@@ -459,7 +458,9 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
       .build()
     val response: Response = httpClient.newCall(request).execute()
     val responseString:String = response.body.string
+    println("calling trimToHTMLTable")
     val tableString: String = trimToHTMLTable(responseString)
+    println("calling generatePageElementList")
     val pageElementList: List[PageElementFromHTMLTableRow] = generatePageElementList(tableString)
     println("List generated - contains: " + pageElementList.length + " elements.")
     pageElementList
@@ -467,7 +468,6 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
 
 
   def trimToHTMLTable(pageHTML: String): String = {
-    //    val responseStringXML: Elem = scala.xml.XML.loadString(response.body.string)
     val responseStringOuterTableStart: Int = pageHTML.indexOf("<table class=\"tableDetails details center\">")
     val responseStringOuterTableEnd: Int = pageHTML.indexOf("</table>", responseStringOuterTableStart)
     val outerTableString: String = pageHTML.slice(responseStringOuterTableStart, responseStringOuterTableEnd)
