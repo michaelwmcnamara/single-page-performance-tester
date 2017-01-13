@@ -24,7 +24,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
   val msTimeBetweenPings: Int = 10000
   val maxCount: Int = roundAt(0)(msmaxTime.toDouble / msTimeBetweenPings).toInt
 
-  val msmaxTimeForMultipleTests: Int = 300000
+  val msmaxTimeForMultipleTests: Int = 600000
   val msTimeBetweenPingsForMultipleTests: Int = 20000
   val maxCountForMultipleTests: Int = roundAt(0)(msmaxTimeForMultipleTests.toDouble / msTimeBetweenPingsForMultipleTests).toInt
 
