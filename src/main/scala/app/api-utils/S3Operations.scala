@@ -30,7 +30,7 @@ class S3Operations(s3BucketName: String, configFile: String) {
     }
   }
 
-  def getConfig: (String, String, String, String, String, String, String, List[String]) = {
+  def getConfig: (String, String, String, String, String, String, String, List[String], String) = {
     println(DateTime.now + " retrieving config from S3 bucket: " + bucket)
 
     println("Obtaining configfile: " + configFileName + " from S3")
@@ -52,14 +52,15 @@ class S3Operations(s3BucketName: String, configFile: String) {
     val emailPassword = conf.getString("email.password")
     val visualsFeedUrl = conf.getString("visuals.page.list")
     val pageFragments: List[String] = conf.getStringList("page.fragments").toList
+    val comparisonBaseUrl = conf.getString("comparison.base.url")
     if ((contentApiKey.length > 0) && (wptBaseUrl.length > 0) && (wptApiKey.length > 0) && (wptLocation.length > 0) && (emailUsername.length > 0) && (emailPassword.length > 0) && (visualsFeedUrl.length > 0)){
       println(DateTime.now + " Config retrieval successful. \n You are using the following webpagetest instance: " + wptBaseUrl)
-      (contentApiKey, wptBaseUrl, wptApiKey, wptLocation, emailUsername, emailPassword, visualsFeedUrl, pageFragments)
+      (contentApiKey, wptBaseUrl, wptApiKey, wptLocation, emailUsername, emailPassword, visualsFeedUrl, pageFragments, comparisonBaseUrl)
     }
     else {
       println(DateTime.now + " ERROR: Problem retrieving config file - one or more parameters not retrieved")
       s3Client.shutdown()
-      ("", "", "", "", "", "", "", List())
+      ("", "", "", "", "", "", "", List(), "")
     }
 
   }

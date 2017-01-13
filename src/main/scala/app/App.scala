@@ -25,6 +25,7 @@ object App {
     val jobStart = DateTime.now
     //  Define names of s3bucket, configuration and output Files
     val s3BucketName = "capi-wpt-querybot"
+    val folderName = "branch-comparison-tester/"
     val configFileName = "config.conf"
 
 
@@ -55,8 +56,8 @@ object App {
 
     //Create new S3 Client
     println("defining new S3 Client (this is done regardless but only used if 'iamTestingLocally' flag is set to false)")
-    val s3Interface = new S3Operations(s3BucketName, configFileName)
-    var configArray: Array[String] = Array("", "", "", "", "", "")
+    val s3Interface = new S3Operations(s3BucketName, folderName + configFileName)
+    var configArray: Array[String] = Array("", "", "", "", "", "", "", "")
     var urlFragments: List[String] = List()
 
     //Get config settings
@@ -64,8 +65,9 @@ object App {
     if (!iamTestingLocally) {
       println(DateTime.now + " retrieving config from S3 bucket: " + s3BucketName)
       val returnTuple = s3Interface.getConfig
-      configArray = Array(returnTuple._1, returnTuple._2, returnTuple._3, returnTuple._4, returnTuple._5, returnTuple._6, returnTuple._7)
+      configArray = Array(returnTuple._1, returnTuple._2, returnTuple._3, returnTuple._4, returnTuple._5, returnTuple._6, returnTuple._7, returnTuple._9)
       urlFragments = returnTuple._8
+      
     }
     else {
       println(DateTime.now + " retrieving local config file: " + configFileName)
@@ -89,11 +91,12 @@ object App {
     val wptBaseUrl: String = configArray(1)
     val wptApiKey: String = configArray(2)
     val wptLocation: String = configArray(3)
+    val comparisonBaseUrl: String = configArray(7)
 
 
     // sendPageWeightAlert all urls to webpagetest at once to enable parallel testing by test agents
 
-    val urlsToSend: List[String] = List(suppliedUrl, makeProdUrl(suppliedUrl))
+    val urlsToSend: List[String] = List(suppliedUrl, makeComparisonUrl(suppliedUrl, comparisonBaseUrl))
     println("Sending " + urlsToSend.length + " urls.")
     val resultUrlList: List[(String, String)] = getResultPages(urlsToSend, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
     // build result page listeners
@@ -326,13 +329,13 @@ object App {
     }
   }
 
-  def makeProdUrl(url: String): String = {
+  def makeComparisonUrl(url: String, comparisonBase: String): String = {
     if(url.take(4).contains("http")) {
       val contentPath: List[String] = url.split("/").toList.drop(3).map(fragment => "/" + fragment)
-      (List("https://www.theguardian.com") ::: contentPath).mkString
+      (List(comparisonBase) ::: contentPath).mkString
     } else {
       val contentPath: List[String] = url.split("/").toList.drop(1).map(fragment => "/" + fragment)
-      (List("https://www.theguardian.com") ::: contentPath).mkString
+      (List(comparisonBase) ::: contentPath).mkString
     }
   }
 
