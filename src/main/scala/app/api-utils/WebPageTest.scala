@@ -24,7 +24,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
   val msTimeBetweenPings: Int = 10000
   val maxCount: Int = roundAt(0)(msmaxTime.toDouble / msTimeBetweenPings).toInt
 
-  val msmaxTimeForMultipleTests: Int = 180000
+  val msmaxTimeForMultipleTests: Int = 300000
   val msTimeBetweenPingsForMultipleTests: Int = 20000
   val maxCountForMultipleTests: Int = roundAt(0)(msmaxTimeForMultipleTests.toDouble / msTimeBetweenPingsForMultipleTests).toInt
 
@@ -291,7 +291,6 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
 
   def testMultipleTimes(url: String, typeOfTest: String, wptLocation: String, testCount: Int): String = {
       println("Alert registered on url: " + url + "\n" + "verify by retesting " + testCount + " times and taking median value")
-      numberOfMultipleTestRequests += testCount
       if(typeOfTest.contains("Desktop")){
         println("Forming desktop webpage test query to confirm alert status")
         val getUrl: HttpUrl = new HttpUrl.Builder()
@@ -302,6 +301,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
           .addQueryParameter("k", apiKey)
           .addQueryParameter("runs", testCount.toString)
           .addQueryParameter("priority", "1")
+          .addQueryParameter("fvonly", "1")
           .addQueryParameter("url", url + fragments)
           .build()
 
@@ -332,6 +332,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
           .addQueryParameter("location", wptLocation + ":Chrome.3G")
           .addQueryParameter("runs", testCount.toString)
           .addQueryParameter("priority", "1")
+          .addQueryParameter("fvonly", "1")
           .addQueryParameter("url", url + fragments)
           .build()
 

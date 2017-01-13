@@ -117,9 +117,9 @@ object App {
     val errorFreeCombinedResults = (for (result <- combinedResultsList if result.speedIndex > 0) yield result).toArray
     val errorFreeCombinedListLength = errorFreeCombinedResults.length
 
-    val ComparisonSummary: String = {if (errorFreeCombinedListLength == 4) {
-      val branchResult = errorFreeCombinedResults(2)
-      val prodResult = errorFreeCombinedResults(3)
+    val ComparisonSummary: String = {if (errorFreeCombinedListLength == 2) {
+      val branchResult = errorFreeCombinedResults(0)
+      val prodResult = errorFreeCombinedResults(1)
 
       val TitleString = "Comparison of performance between your branch and prod: \n"
       val StartRenderString = compareValues("Start-Render", branchResult.startRenderInMs - branchResult.timeToFirstByte, prodResult.startRenderInMs - prodResult.timeToFirstByte)
@@ -183,17 +183,17 @@ object App {
     /*val desktopResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.sendHighPriorityPage(page))
     })*/
-    val desktopResults: List[(String, String)] = urlList.map(page => {
+    /*val desktopResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.testMultipleTimes(page,"Desktop", wptLocation ,5))
-    })
+    })*/
     /*val mobileResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.sendHighPriorityMobile3GPage(page, wptLocation))
     })*/
     val mobileResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.testMultipleTimes(page, "Android/3G", wptLocation, 5))
     })
-    println("number of requests sent: " + desktopResults.length + mobileResults.length)
-    desktopResults ::: mobileResults
+    println("number of requests sent: " /*+ desktopResults.length*/ + mobileResults.length)
+    /*desktopResults :::*/ mobileResults
   }
 
   def listenForResultPages(capiPages: List[String], contentType: String, resultUrlList: List[(String, String)], averages: PageAverageObject, wptBaseUrl: String, wptApiKey: String, wptLocation: String, urlFragments: List[String]): List[PerformanceResultsObject] = {

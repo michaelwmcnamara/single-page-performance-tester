@@ -1,1 +1,20 @@
-We were unable to measure your pages performance. Please check local webpagetest instance is working.
+Comparison of performance between your branch and prod: 
+Pass: No change of any significance for Start-Render.
+
+Value of Start-Render on the live site is: 832
+Value of Start-Render on your branch is: 831
+
+Pass: No change of any significance for Visually-Complete.
+
+Value of Visually-Complete on the live site is: 6899
+Value of Visually-Complete on your branch is: 6866
+
+Warning: SpeedIndex has increased by: 15.85%.
+Value of: SpeedIndex on the live site is: 3823
+Value of: SpeedIndex on your branch is: 4429
+
+Pass: No change of any significance for PageWeight.
+
+Value of PageWeight on the live site is: 1119603
+Value of PageWeight on your branch is: 1131536
+

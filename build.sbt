@@ -29,8 +29,6 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-s3" % "1.10.44",
   // typesafe config
   "com.typesafe" % "config" % "1.3.0",
-  // sbt  command tool dependency
-  "org.scala-sbt" % "command" % "0.13.5",
   //scalactic dependencies
   "org.scalactic" %% "scalactic" % "2.2.6",
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
