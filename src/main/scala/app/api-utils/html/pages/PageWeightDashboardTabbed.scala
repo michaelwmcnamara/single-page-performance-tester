@@ -8,7 +8,7 @@ import org.joda.time.DateTime
  * Created by mmcnamara on 15/04/16.
  */
 class PageWeightDashboardTabbed(combinedResultsList: List[PerformanceResultsObject], desktopResultsList: List[PerformanceResultsObject], mobileResultsList: List[PerformanceResultsObject]) {
-
+/*
   val numberOfCombinedRecords = combinedResultsList.length
   val numberOfDesktopRecords = desktopResultsList.length
   val numberOfMobileRecords = mobileResultsList.length
@@ -175,7 +175,7 @@ class PageWeightDashboardTabbed(combinedResultsList: List[PerformanceResultsObje
     //  }
 
 
-
+*/
 
 
 

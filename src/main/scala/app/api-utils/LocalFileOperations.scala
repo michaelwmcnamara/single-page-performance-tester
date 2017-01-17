@@ -73,76 +73,23 @@ class LocalFileOperations {
       val resultsIterator = for (line <- myData) yield {
         val data: Array[String] = line.split(",")
         var result = new PerformanceResultsObject(data(1),
-          data(7),
-          data(8),
+          data(2),
+          data(3),
+          data(4).toInt,
+          data(5).toInt,
+          data(6).toInt,
+          data(7).toInt,
+          data(8).toInt,
           data(9).toInt,
           data(10).toInt,
           data(11).toInt,
           data(12).toInt,
-          data(13).toInt,
-          data(14).toInt,
-          data(15).toInt,
-          data(16).toInt,
-          data(17).toInt,
-          data(18),
-          data(19).toBoolean,
-          data(20).toBoolean,
-          data(21).toBoolean)
-        //todo - get element list
-        result.setHeadline(Option(data(2)))
-        result.setPageType(data(3))
-        val firstPublishedTime: Option[CapiDateTime] = result.stringtoCAPITime(data(4))
-        result.setPageLastUpdated(firstPublishedTime)
-        val lastUpdateTime: Option[CapiDateTime] = result.stringtoCAPITime(data(5))
-        result.setPageLastUpdated(lastUpdateTime)
-        result.setLiveBloggingNow(data(6))
+          data(13),
+          data(14).toBoolean)
+        result.setTimeOfTest(data(0))
         result
       }
       resultsIterator.toList
     }
-
-  def getElementListFromArray(elementArray: Array[String]): List[PageElementFromHTMLTableRow] = {
-    //println("\n\n\n\n  **************** elementArray: **************** \n"+ elementArray.map(element => element.toString + "\n").mkString + "\n\n\n\n\n\n" )
-    if(elementArray.nonEmpty){
-      val length = elementArray.length
-      //println("element Array length = " + elementArray.length)
-      var index = 0
-      var elementList: List[PageElementFromHTMLTableRow] = List()
-      while(index < length-1){
-/*        println("index = " + index)
-        println("resource = " + elementArray(index))
-        println("content type = " + elementArray(index + 1))
-        println("request start = " + elementArray(index + 2))
-        println("dns link up = " + elementArray(index + 3))
-        println("init connection = " + elementArray(index + 4))
-        println("ssl negotiation = " + elementArray(index + 5))
-        println("time to first byte = " + elementArray(index + 6))
-        println("content download = " + elementArray(index + 7))
-        println("bytes downloaded = " + elementArray(index + 8))
-        println("status code = " + elementArray(index + 9))
-        println("ipaddress = " + elementArray(index + 10))*/
-        val newElement: PageElementFromHTMLTableRow = new PageElementFromParameters(elementArray(index),
-          elementArray(index+1),
-          elementArray(index+2).toInt,
-          elementArray(index+3).toInt,
-          elementArray(index+4).toInt,
-          elementArray(index+5).toInt,
-          elementArray(index+6).toInt,
-          elementArray(index+7).toInt,
-          elementArray(index+8).toInt,
-          elementArray(index+9).toInt,
-          elementArray(index+10)).convertToPageElementFromHTMLTableRow()
-        elementList = elementList ::: List(newElement)
-        index = index + 11
-      }
-      //println("\n\nElementList Populated. \nLength of list: " + elementList.length)
-      //println("Element List Contents: \n" + elementList.map(element => element.toCSVString() + "\n"))
-      elementList
-    }else{
-      val emptyList: List[PageElementFromHTMLTableRow] = List()
-      emptyList
-    }
-  }
-
 
 }

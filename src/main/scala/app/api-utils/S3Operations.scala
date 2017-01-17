@@ -93,7 +93,6 @@ class S3Operations(s3BucketName: String, configFile: String) {
 
   }
 
-
   def getResultsFileFromS3(fileName:String): List[PerformanceResultsObject] = {
     // todo - update to include new fields
     if (doesFileExist(fileName)) {
@@ -102,30 +101,21 @@ class S3Operations(s3BucketName: String, configFile: String) {
       val myData = scala.io.Source.fromInputStream(objectData).getLines()
       val resultsIterator = for (line <- myData) yield {
         val data: Array[String] = line.split(",")
-        var result = new PerformanceResultsObject(data(1),
-          data(7),
-          data(8),
+        val result = new PerformanceResultsObject(data(1),
+          data(2),
+          data(3),
+          data(4).toInt,
+          data(5).toInt,
+          data(6).toInt,
+          data(7).toInt,
+          data(8).toInt,
           data(9).toInt,
           data(10).toInt,
           data(11).toInt,
           data(12).toInt,
-          data(13).toInt,
-          data(14).toInt,
-          data(15).toInt,
-          data(16).toInt,
-          data(17).toInt,
-          data(18),
-          data(19).toBoolean,
-          data(20).toBoolean,
-          data(21).toBoolean)
-        //todo - get element list
-        result.setHeadline(Option(data(2)))
-        result.setPageType(data(3))
-        val firstPublishedTime: Option[CapiDateTime] = result.stringtoCAPITime(data(4))
-        result.setPageLastUpdated(firstPublishedTime)
-        val lastUpdateTime: Option[CapiDateTime] = result.stringtoCAPITime(data(5))
-        result.setPageLastUpdated(lastUpdateTime)
-        result.setLiveBloggingNow(data(6))
+          data(13),
+          data(14).toBoolean)
+        result.setTimeOfTest(data(0))
         result
       }
       resultsIterator.toList
@@ -135,52 +125,6 @@ class S3Operations(s3BucketName: String, configFile: String) {
     }
   }
 
-
-  def getElementListFromArray(elementArray: Array[String]): List[PageElementFromHTMLTableRow] = {
-    if(elementArray.nonEmpty){
-      val length = elementArray.length
-      var index = 0
-      var elementList: List[PageElementFromHTMLTableRow] = List()
-      while((index < length-1) && (!elementArray(index + 1).matches(""))){
-        if((elementArray(index+2).length > 8) || elementArray(index+2).matches("-")){
-          val newElement: PageElementFromHTMLTableRow = new PageElementFromParameters(elementArray(index) +
-          elementArray(index + 1),
-          elementArray(index + 2),
-          elementArray(index + 3).toInt,
-          elementArray(index + 4).toInt,
-          elementArray(index + 5).toInt,
-          elementArray(index + 6).toInt,
-          elementArray(index + 7).toInt,
-          elementArray(index + 8).toInt,
-          elementArray(index + 9).toInt,
-          elementArray(index + 10).toInt,
-          elementArray(index + 11)).convertToPageElementFromHTMLTableRow()
-          elementList = elementList ::: List(newElement)
-          index = index + 12
-        }else {
-          val newElementFromParameters = new PageElementFromParameters(elementArray(index),
-            elementArray(index + 1),
-            elementArray(index + 2).toInt,
-            elementArray(index + 3).toInt,
-            elementArray(index + 4).toInt,
-            elementArray(index + 5).toInt,
-            elementArray(index + 6).toInt,
-            elementArray(index + 7).toInt,
-            elementArray(index + 8).toInt,
-            elementArray(index + 9).toInt,
-            elementArray(index + 10))
-            val newElement = newElementFromParameters.convertToPageElementFromHTMLTableRow()
-          elementList = elementList ::: List(newElement)
-          index = index + 11
-        }
-      }
-    elementList
-  }else{
-      println("No elements found - returning empty list \n this case should never be reached as it breaks things")
-      val emptyList: List[PageElementFromHTMLTableRow] = List()
-      emptyList
-    }
-  }
 
   def getCSVFileFromS3(fileName: String): List[String] = {
     if (doesFileExist(fileName)) {

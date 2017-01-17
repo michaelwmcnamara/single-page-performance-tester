@@ -30,7 +30,7 @@ object App {
 
 
     val pageResults = exportPath + "performanceComparisonSummary.txt"
-    val pageList = exportPath + "performanceTestResults.csv"
+    val pageList = "performanceTestResults.csv"
 
     // summary files
 
@@ -72,7 +72,7 @@ object App {
     else {
       println(DateTime.now + " retrieving local config file: " + configFileName)
       val configReader = new LocalFileOperations
-      configArray = configReader.readInConfig(configFileName)
+      configArray = configReader.readInConfig(folderName + configFileName)
     }
     println("checking validity of config values")
     if ((configArray(0).length < 1) || (configArray(1).length < 1) || (configArray(2).length < 1) || (configArray(3).length < 1)) {
@@ -93,16 +93,11 @@ object App {
     val wptLocation: String = configArray(3)
     val comparisonBaseUrl: String = configArray(7)
 
+    val previousTestResults = s3Interface.getResultsFileFromS3(folderName + pageList)
 
-    // sendPageWeightAlert all urls to webpagetest at once to enable parallel testing by test agents
-
-    val urlsToSend: List[String] = List(suppliedUrl, makeComparisonUrl(suppliedUrl, comparisonBaseUrl))
-    println("Sending " + urlsToSend.length + " urls.")
+//    val urlsToSend: List[String] = List(suppliedUrl, makeComparisonUrl(suppliedUrl, comparisonBaseUrl))
+    val urlsToSend: List[String] = List(suppliedUrl)
     val resultUrlList: List[(String, String)] = getResultPages(urlsToSend, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
-    // build result page listeners
-    // first format alerts from previous test that arent in the new capi queries
-
-    //obtain results for articles
     if (resultUrlList.nonEmpty) {
       println("Generating average values for articles")
       val articleAverages: PageAverageObject = new ArticleDefaultAverages(averageColor)
@@ -116,40 +111,78 @@ object App {
       println("CAPI query found no article pages")
     }
 
-    combinedResultsList.foreach(result => "speedindex = " + println(result.speedIndex) + "\n")
-    val errorFreeCombinedResults = (for (result <- combinedResultsList if result.speedIndex > 0) yield result).toArray
+    val errorFreeCombinedResults = for (result <- combinedResultsList if result.speedIndex > 0) yield result
     val errorFreeCombinedListLength = errorFreeCombinedResults.length
 
-    val ComparisonSummary: String = {if (errorFreeCombinedListLength == 2) {
-      val branchResult = errorFreeCombinedResults(0)
-      val prodResult = errorFreeCombinedResults(1)
-
-      val TitleString = "Comparison of performance between your branch and prod: \n"
-      val StartRenderString = compareValues("Start-Render", branchResult.startRenderInMs - branchResult.timeToFirstByte, prodResult.startRenderInMs - prodResult.timeToFirstByte)
-      val VisuallyCompleteString = compareValues("Visually-Complete", branchResult.visualComplete - branchResult.timeToFirstByte , prodResult.visualComplete - prodResult.timeToFirstByte)
-      val SpeedIndexString = compareValues("SpeedIndex", branchResult.speedIndex, prodResult.speedIndex)
-      val PageWeightString = compareValues("PageWeight", branchResult.bytesInFullyLoaded, prodResult.bytesInFullyLoaded)
-
-      TitleString + StartRenderString + VisuallyCompleteString + SpeedIndexString + PageWeightString
+    val ComparisonSummary: String = {if (errorFreeCombinedListLength > 0) {
+      val branchResult = errorFreeCombinedResults.head
+      generateComparisonSummary(previousTestResults, branchResult)
       } else {
-       "We were unable to measure your pages performance. Please check local webpagetest instance is working."
+       "Error: No performance results returned. Please check local webpagetest instance is working."
       }
     }
 
     //write combined results to file
-      println(DateTime.now + " Writing results to " + pageResults )
-      val outputWriter = new LocalFileOperations
-      val writeSuccessSummary: Int = outputWriter.writeLocalResultFile(pageResults, ComparisonSummary)
-      if (writeSuccessSummary != 0) {
+
+    println(DateTime.now + " Writing results to " + pageResults )
+    val allTestResults = errorFreeCombinedResults ::: previousTestResults.take(5999)
+    val outputWriter = new LocalFileOperations
+    val writeSuccessSummary: Int = outputWriter.writeLocalResultFile(pageResults, ComparisonSummary)
+    if (writeSuccessSummary != 0) {
         println("problem writing local outputfile")
         System exit 1
       }
-      val writeSuccessList: Int = outputWriter.writeLocalResultFile(pageList, combinedResultsList.map(_.toCSVString()).mkString)
-      if (writeSuccessList != 0) {
-      println("problem writing local outputfile")
-      System exit 1
-    }
+      if(!iamTestingLocally){
+       s3Interface.writeFileToS3(folderName + pageList, combinedResultsList.map(_.toCSVString()).mkString)
+      }else {
+        val writeSuccessList: Int = outputWriter.writeLocalResultFile(exportPath + pageList, allTestResults.map(_.toCSVString()).mkString)
+        if (writeSuccessList != 0) {
+          println("problem writing local outputfile")
+          System exit 1
+        }
+      }
+  }
 
+  def generateComparisonSummary(previousResults: List[PerformanceResultsObject], latestResult: PerformanceResultsObject): String = {
+    val TitleString = "Comparison of performance between your branch and prod: \n"
+    val averageResult = generateAverageValues(previousResults)
+    if (previousResults.length >= 10 && averageResult.nonEmpty && latestResult.speedIndex > 0) {
+      val StartRenderString = compareValues("Start-Render", latestResult.startRenderInMs, averageResult.get.startRenderInMs)
+      val VisuallyCompleteString = compareValues("Visually-Complete", latestResult.visualComplete, averageResult.get.visualComplete)
+      val SpeedIndexString = compareValues("SpeedIndex", latestResult.speedIndex, averageResult.get.speedIndex)
+      val PageWeightString = compareValues("PageWeight", latestResult.bytesInFullyLoaded, averageResult.get.bytesInFullyLoaded)
+      TitleString + StartRenderString + VisuallyCompleteString + SpeedIndexString + PageWeightString
+    } else {
+      if (latestResult.speedIndex > 0) {
+        "I don't yet have enough measurements to generate a decent average for comparison. PLease try again later"
+      } else {
+        "We were unable to measure your pages performance. Please check that local webpagetest instance is working."
+      }
+
+    }
+  }
+
+  def generateAverageValues(results: List[PerformanceResultsObject]): Option[PerformanceResultsObject] = {
+    val numberOfResults = results.length
+    if(numberOfResults > 0) {
+      val urlName: String = "\"Average of \" + numberOfResults + \" results.\""
+      val testType = "Not Appliable"
+      val testSummaryPage = "Not Appliable"
+      val avgTimeToFirstByte = (results.map(_.timeToFirstByte).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgFirstPaint: Int = (results.map(_.timeFirstPaintInMs).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgStartRender: Int =  (results.map(_.startRenderInMs).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgDocTime: Int = (results.map(_.timeDocCompleteInMs).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgBytesInDoc: Int = (results.map(_.bytesInDocComplete).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgFullyLoadedTime: Int = (results.map(_.timeFullyLoadedInMs).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgTotalBytesIn: Int = (results.map(_.bytesInFullyLoaded).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgSpeedIndex: Int = (results.map(_.speedIndex).sum.toDouble / numberOfResults.toDouble).toInt
+      val avgVisualComplete: Int = (results.map(_.visualComplete).sum.toDouble / numberOfResults.toDouble).toInt
+      val status: String = "Average Values"
+
+      Some(new PerformanceResultsObject(urlName, testType, testSummaryPage, avgTimeToFirstByte, avgStartRender, avgFirstPaint, avgDocTime, avgBytesInDoc, avgFullyLoadedTime, avgTotalBytesIn, avgSpeedIndex, avgVisualComplete, status, false))
+    } else {
+      None
+    }
   }
 
   def compareValues(valueName: String, branch: Int, prod: Int): String ={
@@ -219,106 +252,12 @@ object App {
       println("getting result for page element: " + newElement.pageUrl)
       newElement.testResults = wpt.getMultipleResults(newElement.pageUrl,newElement.wptResultUrl)
       println("result received\n setting headline")
-      newElement.testResults.setPageType(newElement.pageType)
       println("pagetype set\n setting FirstPublished")
       println("all variables set for element")
       newElement
     })
     println("Generating list of results objects from list of listener objects")
-    val testResults = resultsList.map(element => element.testResults).toList
-    println("setting alert status of results in list")
-    val resultsWithAlerts: List[PerformanceResultsObject] = testResults.map(element => setAlertStatus(element, averages))
-    println("about to return list of results")
-    resultsWithAlerts
-  }
-
-  def setAlertStatus(resultObject: PerformanceResultsObject, averages: PageAverageObject): PerformanceResultsObject = {
-    //  Add results to string which will eventually become the content of our results file
-    if (resultObject.typeOfTest == "Desktop") {
-      if (resultObject.kBInFullyLoaded >= averages.desktopKBInFullyLoaded) {
-        println("PageWeight Alert Set")
-        resultObject.pageWeightAlertDescription = "the page is too heavy. Please examine the list of embeds below for items that are unexpectedly large."
-        resultObject.alertStatusPageWeight = true
-      }
-      else {
-        println("PageWeight Alert not set")
-        resultObject.alertStatusPageWeight = false
-      }
-      if ((resultObject.timeFirstPaintInMs >= averages.desktopTimeFirstPaintInMs) ||
-          (resultObject.speedIndex >= averages.desktopSpeedIndex)) {
-        println("PageSpeed alert set")
-        resultObject.alertStatusPageSpeed = true
-        if ((resultObject.timeFirstPaintInMs >= averages.desktopTimeFirstPaintInMs) && (resultObject.speedIndex >= averages.desktopSpeedIndex)) {
-          resultObject.pageSpeedAlertDescription = "Time till page is scrollable (time-to-first-paint) and time till page looks loaded (SpeedIndex) are unusually high. Please investigate page elements below or contact <a href=mailto:\"dotcom.health@guardian.co.uk\">the dotcom-health team</a> for assistance."
-        } else {
-          if (resultObject.speedIndex >= averages.desktopSpeedIndex) {
-            resultObject.pageSpeedAlertDescription = "Time till page looks loaded (SpeedIndex) is unusually high. Please investigate page elements below or contact <a href=mailto:\"dotcom.health@guardian.co.uk\">the dotcom-health team</a> for assistance."
-          }
-          else {
-            resultObject.pageSpeedAlertDescription = "Time till page is scrollable (time-to-first-paint) is unusually high. Please investigate page elements below or contact <a href=mailto:\"dotcom.health@guardian.co.uk\">the dotcom-health team</a> for assistance."
-          }
-        }
-      } else {
-        println("PageSpeed alert not set")
-        resultObject.alertStatusPageSpeed = false
-      }
-    } else {
-      //checking if status of mobile test needs an alert
-      if (resultObject.kBInFullyLoaded >= averages.mobileKBInFullyLoaded) {
-        println("PageWeight Alert Set")
-        resultObject.pageWeightAlertDescription = "the page is too heavy. Please examine the list of embeds below for items that are unexpectedly large."
-        resultObject.alertStatusPageWeight = true
-      }
-      else {
-        println("PageWeight Alert not set")
-        resultObject.alertStatusPageWeight = false
-      }
-      if ((resultObject.timeFirstPaintInMs >= averages.mobileTimeFirstPaintInMs) ||
-        (resultObject.speedIndex >= averages.mobileSpeedIndex)) {
-        println("PageSpeed alert set")
-        resultObject.alertStatusPageSpeed = true
-        if ((resultObject.timeFirstPaintInMs >= averages.mobileTimeFirstPaintInMs) && (resultObject.speedIndex >= averages.mobileSpeedIndex)) {
-          resultObject.pageSpeedAlertDescription = "Time till page is scrollable (time-to-first-paint) and time till page looks loaded (SpeedIndex) are unusually high. Please investigate page elements below or contact <a href=mailto:\"dotcom.health@guardian.co.uk\">the dotcom-health team</a> for assistance."
-        } else {
-          if (resultObject.speedIndex >= averages.mobileSpeedIndex) {
-            resultObject.pageSpeedAlertDescription = "Time till page looks loaded (SpeedIndex) is unusually high. Please investigate page elements below or contact <a href=mailto:\"dotcom.health@guardian.co.uk\">the dotcom-health team</a> for assistance."
-          }
-          else {
-            resultObject.pageSpeedAlertDescription = "Time till page is scrollable (time-to-first-paint) is unusually high. Please investigate page elements below or contact <a href=mailto:\"dotcom.health@guardian.co.uk\">the dotcom-health team</a> for assistance."
-          }
-        }
-      } else {
-        println("PageSpeed alert not set")
-        resultObject.alertStatusPageSpeed = false
-      }
-    }
-    println("Returning test result with alert flags set to relevant values")
-    resultObject
-  }
-
-  def generateInteractiveAverages(urlList: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String, urlFragments: List[String], itemtype: String, averageColor: String): PageAverageObject = {
-    val setHighPriority: Boolean = true
-    val webpageTest: WebPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
-
-    val resultsList: List[Array[PerformanceResultsObject]] = urlList.map(url => {
-      val webPageDesktopTestResults: PerformanceResultsObject = webpageTest.desktopChromeCableTest(url, setHighPriority)
-      val webPageMobileTestResults: PerformanceResultsObject = webpageTest.mobileChrome3GTest(url, wptLocation, setHighPriority)
-      val combinedResults = Array(webPageDesktopTestResults, webPageMobileTestResults)
-      combinedResults
-    })
-
-    val pageAverages: PageAverageObject = new GeneratedInteractiveAverages(resultsList, averageColor)
-    pageAverages
-  }
-
-  def applyAnchorId(resultsObjectList: List[PerformanceResultsObject], lastIDAssigned: Int): (List[PerformanceResultsObject], Int) = {
-    var iterator = lastIDAssigned + 1
-    val resultList = for (result <- resultsObjectList) yield {
-      result.anchorId = Option(result.headline.getOrElse(iterator) + result.typeOfTest)
-      iterator = iterator + 1
-      result
-    }
-    (resultList,iterator)
+    resultsList.map(element => element.testResults).toList
   }
 
 

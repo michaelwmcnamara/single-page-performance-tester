@@ -8,7 +8,7 @@ import org.joda.time.DateTime
  * Created by mmcnamara on 15/04/16.
  */
 class PageSpeedDashboardTabbed(combinedResultsList: List[PerformanceResultsObject], desktopResultsList: List[PerformanceResultsObject], mobileResultsList: List[PerformanceResultsObject]) {
-
+/*
   //HTML Page elements
   //Page Header
   val HTML_PAGE_HEAD: String = "<!DOCTYPE html><html lang=\"en\">" + "\n" +
@@ -99,7 +99,7 @@ class PageSpeedDashboardTabbed(combinedResultsList: List[PerformanceResultsObjec
     HTML_REPORT_TABLE_HEADERS + "\n" + generateHTMLDataRows(resultsList) + "\n" + HTML_TABLE_END
   }
 
-  def generateHTMLDataRows(resultsList: List[PerformanceResultsObject]): String = {
+ def generateHTMLDataRows(resultsList: List[PerformanceResultsObject]): String = {
     (for (result <- resultsList) yield {
       if(result.alertStatusPageSpeed){
         "<tr class=\"pageclass " + getAlertClass(result) + "\">" + result.toHTMLInteractiveTableCells() + "<td><div class=\"arrow\"></div></td></tr>" + "\n" +
@@ -128,7 +128,6 @@ class PageSpeedDashboardTabbed(combinedResultsList: List[PerformanceResultsObjec
         "default"
       }
   }
-
   // Access Methods
 
   override def toString(): String = {
@@ -160,7 +159,7 @@ class PageSpeedDashboardTabbed(combinedResultsList: List[PerformanceResultsObjec
   //    hTMLInteractiveTableHeaders
   //  }
 
-
+*/
 
 
 
