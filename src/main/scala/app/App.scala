@@ -133,7 +133,7 @@ object App {
         System exit 1
       }
       if(!iamTestingLocally){
-       s3Interface.writeFileToS3(folderName + pageList, combinedResultsList.map(_.toCSVString()).mkString)
+       s3Interface.writeFileToS3(folderName + pageList, allTestResults.map(_.toCSVString()).mkString)
       }else {
         val writeSuccessList: Int = outputWriter.writeLocalResultFile(exportPath + pageList, allTestResults.map(_.toCSVString()).mkString)
         if (writeSuccessList != 0) {
