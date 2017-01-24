@@ -116,7 +116,9 @@ object App {
 
     val ComparisonSummary: String = {if (errorFreeCombinedListLength > 0) {
       val branchResult = errorFreeCombinedResults.head
-      generateComparisonSummary(previousTestResults, branchResult)
+      // take 10 most recent results to use for average
+      val resultsForAverage = previousTestResults.splitAt(previousTestResults.length - 11)._2
+      generateComparisonSummary(resultsForAverage, branchResult)
       } else {
        "Error: No performance results returned. Please check local webpagetest instance is working."
       }
