@@ -197,12 +197,12 @@ object App {
         }
       }
     }
-    if (percentageDifference._1.contains("Greater") && (percentageDifference._2 > 3)){
+    if (percentageDifference._1.contains("Greater") && (percentageDifference._2 > 10)){
       "Warning: " + valueName + " has increased by: " + percentageDifference._2 + "%.\n" +
         "Value of: " + valueName + " on the live site is: " + prod + "\n" +
         "Value of: " + valueName + " on your branch is: " + branch + "\n\n"
     } else {
-      if (percentageDifference._1.contains("Less") && (percentageDifference._2 > 3)) {
+      if (percentageDifference._1.contains("Less") && (percentageDifference._2 > 10)) {
         "Pass: " + valueName + " has decreased by: " + percentageDifference._2 + "%.\n" +
           "Value of " + valueName + " on the live site is: " + prod + "\n" +
           "Value of " + valueName + " on your branch is: " + branch + "\n\n"
@@ -216,15 +216,6 @@ object App {
 
   def getResultPages(urlList: List[String], urlFragments: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String): List[(String, String)] = {
     val wpt: WebPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
-    /*val desktopResults: List[(String, String)] = urlList.map(page => {
-      (page, wpt.sendHighPriorityPage(page))
-    })*/
-    /*val desktopResults: List[(String, String)] = urlList.map(page => {
-      (page, wpt.testMultipleTimes(page,"Desktop", wptLocation ,5))
-    })*/
-    /*val mobileResults: List[(String, String)] = urlList.map(page => {
-      (page, wpt.sendHighPriorityMobile3GPage(page, wptLocation))
-    })*/
     val mobileResults: List[(String, String)] = urlList.map(page => {
       (page, wpt.testMultipleTimes(page, "Android/3G", wptLocation, 5))
     })
