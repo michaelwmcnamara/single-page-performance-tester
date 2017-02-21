@@ -120,7 +120,9 @@ object App {
       val resultsForAverage = previousTestResults.splitAt(previousTestResults.length - 11)._2
       generateComparisonSummary(resultsForAverage, branchResult)
       } else {
-       "Error: No performance results returned. Please check local webpagetest instance is working."
+       "Error: No performance results returned. Please check local webpagetest instance is working. \n " +
+         "Combined Results List: \n" +
+        combinedResultsList.map(_.toCSVString() + "\n")
       }
     }
 
