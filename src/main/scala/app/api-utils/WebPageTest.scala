@@ -367,7 +367,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
     averageIteratorCountForMultipleTests = ((averageIteratorCountForMultipleTests * (numberOfTestResultsSoughtByMultipleTests - 1)) + iterator)/numberOfTestResultsSoughtByMultipleTests
     if ((testResults \\ "statusCode").text.toInt == 200) {
       println("Add one final request as occasionally 200 code comes before the data we want.")
-      Thread.sleep(15000)
+      Thread.sleep(20000)
       response = httpClient.newCall(request).execute()
       testResults = scala.xml.XML.loadString(response.body.string)
       if ((testResults \\ "response" \ "data" \ "successfulFVRuns").text.toInt > 0) {
