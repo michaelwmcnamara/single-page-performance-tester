@@ -503,7 +503,7 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
     val testType: String = "Unknown"
     val failComment: String = "Test failed for unknown reason"
     // set warning status as result may have timed out due to very large page
-    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, failComment, failIndicator, failIndicator, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failIndicator, failComment, true)
+    val failElement: PerformanceResultsObject = new PerformanceResultsObject(url, testType, failComment, failIndicator, failIndicator, failIndicator, failIndicator,failIndicator,failIndicator,failIndicator,failIndicator, failIndicator, rawResults.mkString, true)
     failElement
   }
 
