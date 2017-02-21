@@ -122,7 +122,7 @@ object App {
       } else {
        "Error: No performance results returned. Please check local webpagetest instance is working. \n " +
          "Combined Results List: \n" +
-        combinedResultsList.map(_.toCSVString() + "\n")
+        combinedResultsList.map(result => result.csvStringHeaders() + "\n" + result.toCSVString() + "\n")
       }
     }
 

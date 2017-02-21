@@ -50,6 +50,9 @@ class PerformanceResultsObject(url:String, testType: String, urlforTestResults: 
     timeOfTest = time}
   }
 
+  def csvStringHeaders(): String = {
+    "TimeOfTest" + "," + "TestUrl" + "," + "TypeOfTest" + "," + "FriendlyResultUrl" + "," + "TimeToFirstByte" + "," + "TimeFirstPaintInMs" + "," + "StartRenderInMs" + "," + "TimeDocCompleteInMs" + "," + "BytesInDocComplete" + "," + "TimeFullyLoadedInMs" + "," + "BytesInFullyLoaded" + "," + "SpeedIndex" + "," + "VisualComplete" + "," + "ResultStatus" + "," + "BrokenTest" + "\n"
+  }
 
   def toCSVString(): String = {
     timeOfTest + "," + testUrl.toString + "," + typeOfTest + "," + friendlyResultUrl + "," + timeToFirstByte.toString + "," + timeFirstPaintInMs.toString + "," + startRenderInMs + "," + timeDocCompleteInMs + "," + bytesInDocComplete + "," + timeFullyLoadedInMs + "," + bytesInFullyLoaded + "," + speedIndex + "," + visualComplete + "," + cleanString(resultStatus) + "," + brokenTest + "\n"
