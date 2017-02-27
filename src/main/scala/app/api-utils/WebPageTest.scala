@@ -390,22 +390,22 @@ class WebPageTest(baseUrl: String, passedKey: String, urlFragments: List[String]
         "Desktop"
       }
       val testSummaryPage: String = (rawXMLResult \\ "response" \ "data" \ "summary").text.toString
-      val timeToFirstByte: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "TTFB").text.toInt
-      val firstPaint: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "firstPaint").text.toInt
+      val timeToFirstByte: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "TTFB").text.toInt
+      val firstPaint: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "firstPaint").text.toInt
       println("firstPaint = " + firstPaint)
-      val startRender: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "render").text.toInt
+      val startRender: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "render").text.toInt
       println("start render = " + startRender)
-      val docTime: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "docTime").text.toInt
+      val docTime: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "docTime").text.toInt
       println("docTime = " + docTime)
-      val bytesInDoc: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "bytesInDoc").text.toInt
+      val bytesInDoc: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "bytesInDoc").text.toInt
       println("bytesInDoc = " + bytesInDoc)
-      val fullyLoadedTime: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "fullyLoaded").text.toInt
+      val fullyLoadedTime: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "fullyLoaded").text.toInt
       println("Time to Fully loaded = " + fullyLoadedTime)
-      val totalbytesIn: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "bytesIn").text.toInt
+      val totalbytesIn: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "bytesIn").text.toInt
       println("Total bytes = " + totalbytesIn)
-      val speedIndex: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "SpeedIndex").text.toInt
+      val speedIndex: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "SpeedIndex").text.toInt
       println("SpeedIndex = " + speedIndex)
-      val visualComplete: Int = (rawXMLResult \\ "response" \ "data" \ "average" \ "firstView" \ "visualComplete").text.toInt
+      val visualComplete: Int = (rawXMLResult \\ "response" \ "data" \ "median" \ "firstView" \ "visualComplete").text.toInt
       println("Visually Complete = " + visualComplete)
       val status: String = "Test Success"
       println("Creating PerformanceResultsObject")

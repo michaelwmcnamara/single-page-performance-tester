@@ -157,12 +157,19 @@ object App {
   }
 
   def generateComparisonSummary(previousResults: List[PerformanceResultsObject], latestResult: PerformanceResultsObject): String = {
-    val TitleString = "Comparison of performance between your branch and prod: \n"
+    val TitleString = "Comparison of performance between your branch and accumulated average: \n"
     val averageResult = generateAverageValues(previousResults)
     if (previousResults.length >= 10 && averageResult.nonEmpty && latestResult.speedIndex > 0) {
       val StartRenderString = compareValues("Start-Render", latestResult.startRenderInMs, averageResult.get.startRenderInMs)
-      val VisuallyCompleteString = compareValues("Visually-Complete", latestResult.visualComplete, averageResult.get.visualComplete)
-      val SpeedIndexString = compareValues("SpeedIndex", latestResult.speedIndex, averageResult.get.speedIndex)
+      val VisuallyCompleteString = {
+        if(latestResult.visualComplete < 10000)
+        compareValues("Visually-Complete", latestResult.visualComplete, averageResult.get.visualComplete)
+        else
+        invalidValueMessage("Visually-Complete")}
+      val SpeedIndexString = {if(latestResult.speedIndex < 10000)
+        compareValues("SpeedIndex", latestResult.speedIndex, averageResult.get.speedIndex)
+        else
+        invalidValueMessage("SpeedIndex")}
       val PageWeightString = compareValues("PageWeight", latestResult.bytesInFullyLoaded, averageResult.get.bytesInFullyLoaded)
       TitleString + StartRenderString + VisuallyCompleteString + SpeedIndexString + PageWeightString
     } else {
@@ -198,13 +205,13 @@ object App {
     }
   }
 
-  def compareValues(valueName: String, branch: Int, prod: Int): String ={
+  def compareValues(valueName: String, branch: Int, average: Int): String ={
     val percentageDifference: (String, Double) = {
-      if (branch > prod) {
-        ("Greater", roundAt(2)(((branch - prod).toDouble / prod.toDouble) * 100))
+      if (branch > average) {
+        ("Greater", roundAt(2)(((branch - average).toDouble / average.toDouble) * 100))
       } else {
-        if (branch < prod) {
-          ("Less", roundAt(2)(((prod - branch).toDouble / prod.toDouble) * 100))
+        if (branch < average) {
+          ("Less", roundAt(2)(((average - branch).toDouble / average.toDouble) * 100))
         } else {
           ("Equal", 0.0)
         }
@@ -212,19 +219,25 @@ object App {
     }
     if (percentageDifference._1.contains("Greater") && (percentageDifference._2 > 10)){
       "Warning: " + valueName + " has increased by: " + percentageDifference._2 + "%.\n" +
-        "Value of: " + valueName + " on the live site is: " + prod + "\n" +
+        "Value of: " + valueName + " on the live site is: " + average + "\n" +
         "Value of: " + valueName + " on your branch is: " + branch + "\n\n"
     } else {
       if (percentageDifference._1.contains("Less") && (percentageDifference._2 > 10)) {
         "Pass: " + valueName + " has decreased by: " + percentageDifference._2 + "%.\n" +
-          "Value of " + valueName + " on the live site is: " + prod + "\n" +
+          "Value of " + valueName + " on the live site is: " + average + "\n" +
           "Value of " + valueName + " on your branch is: " + branch + "\n\n"
       } else {
         "Pass: " + "No change of any significance for " + valueName + ".\n\n" +
-          "Value of " + valueName + " on the live site is: " + prod + "\n" +
+          "Value of " + valueName + " on the live site is: " + average + "\n" +
           "Value of " + valueName + " on your branch is: " + branch + "\n\n"
       }
     }
+
+
+  }
+
+  def invalidValueMessage(field: String): String = {
+    " The measurements for " + field + " are not valid. Please rerun test"
   }
 
   def getResultPages(urlList: List[String], urlFragments: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String): List[(String, String)] = {
