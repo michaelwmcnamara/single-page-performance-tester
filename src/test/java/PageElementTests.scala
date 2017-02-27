@@ -15,11 +15,12 @@ import scala.io.Source
     //Create new S3 Client
     val amazonDomain = "https://s3-eu-west-1.amazonaws.com"
     val s3BucketName = "capi-wpt-querybot"
+    val folderName = "branch-comparison-tester/"
     val configFileName = "config.conf"
     val emailFileName = "addresses.conf"
 
     println("defining new S3 Client (this is done regardless but only used if 'iamTestingLocally' flag is set to false)")
-    val s3Interface = new S3Operations(s3BucketName, configFileName)
+    val s3Interface = new S3Operations(s3BucketName, folderName + configFileName)
     var configArray: Array[String] = Array("", "", "", "", "", "")
     var urlFragments: List[String] = List()
     val resultsFromPreviousTests = "resultsFromPreviousTests.csv"

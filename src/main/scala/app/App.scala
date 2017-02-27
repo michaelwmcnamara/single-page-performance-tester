@@ -44,7 +44,7 @@ object App {
     //initialize combinedResultsLists - these will be used to sort and accumulate test results
     // for the combined page and for long term storage file
     var combinedResultsList: List[PerformanceResultsObject] = List()
-
+    var retestedResultsList: List[PerformanceResultsObject] = List()
 
     //Initialize Page-Weight email alerts lists - these will be used to generate emails
 
@@ -102,16 +102,24 @@ object App {
       println("Generating average values for articles")
       val articleAverages: PageAverageObject = new ArticleDefaultAverages(averageColor)
       val articleResultsList = listenForResultPages(urlsToSend, "Article", resultUrlList, articleAverages, wptBaseUrl, wptApiKey, wptLocation, urlFragments)
-      combinedResultsList = articleResultsList
+      val combinedResultsList = articleResultsList
+      retestedResultsList = combinedResultsList.map(result => {
+        if((result.speedIndex > 10000) || (result.visualComplete > 10000))
+          retestResult(result.testUrl, urlFragments, wptBaseUrl, wptApiKey, wptLocation)
+        else
+          result
+      })
       println("\n \n \n article tests complete. \n tested " + articleResultsList.length + "pages")
-      println("Total number of results gathered so far " + combinedResultsList.length + "pages")
-      println("Article Performance Test Complete")
+      println("Total number of results gathered so far " + retestedResultsList.length + "pages")
+      println("Performance Test Complete")
 
     } else {
-      println("CAPI query found no article pages")
+      println("No results in list")
     }
 
-    val errorFreeCombinedResults = for (result <- combinedResultsList if result.speedIndex > 0) yield result
+
+
+    val errorFreeCombinedResults = for (result <- retestedResultsList if result.speedIndex > 0) yield result
     val errorFreeCombinedListLength = errorFreeCombinedResults.length
 
     val ComparisonSummary: String = {if (errorFreeCombinedListLength > 0) {
@@ -130,6 +138,7 @@ object App {
 
     println(DateTime.now + " Writing results to " + pageResults )
     val allTestResults = errorFreeCombinedResults ::: previousTestResults.take(5999)
+    val editedTestResults = allTestResults.filter(_.speedIndex <= 10).filter(_.visualComplete <= 10)
     val outputWriter = new LocalFileOperations
     val writeSuccessSummary: Int = outputWriter.writeLocalResultFile(pageResults, ComparisonSummary)
     if (writeSuccessSummary != 0) {
@@ -137,9 +146,9 @@ object App {
         System exit 1
       }
       if(!iamTestingLocally){
-       s3Interface.writeFileToS3(folderName + pageList, allTestResults.map(_.toCSVString()).mkString)
+       s3Interface.writeFileToS3(folderName + pageList, editedTestResults.map(_.toCSVString()).mkString)
       }else {
-        val writeSuccessList: Int = outputWriter.writeLocalResultFile(exportPath + pageList, allTestResults.map(_.toCSVString()).mkString)
+        val writeSuccessList: Int = outputWriter.writeLocalResultFile(exportPath + pageList, editedTestResults.map(_.toCSVString()).mkString)
         if (writeSuccessList != 0) {
           println("problem writing local outputfile")
           System exit 1
@@ -253,6 +262,12 @@ object App {
     })
     println("Generating list of results objects from list of listener objects")
     resultsList.map(element => element.testResults).toList
+  }
+
+  def retestResult(url: String, urlFragments: List[String], wptBaseUrl: String, wptApiKey: String, wptLocation: String): PerformanceResultsObject = {
+    val wpt: WebPageTest = new WebPageTest(wptBaseUrl, wptApiKey, urlFragments)
+    val mobileResultPage: String = wpt.testMultipleTimes(url, "Android/3G", wptLocation, 5)
+    wpt.getMultipleResults(url, mobileResultPage)
   }
 
 
