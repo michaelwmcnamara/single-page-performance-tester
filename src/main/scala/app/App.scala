@@ -138,7 +138,7 @@ object App {
 
     println(DateTime.now + " Writing results to " + pageResults )
     val allTestResults = errorFreeCombinedResults ::: previousTestResults.take(5999)
-    val editedTestResults = allTestResults.filter(_.speedIndex <= 10).filter(_.visualComplete <= 10)
+    val editedTestResults = allTestResults.filter(_.speedIndex <= 10000).filter(_.visualComplete <= 10000)
     val outputWriter = new LocalFileOperations
     val writeSuccessSummary: Int = outputWriter.writeLocalResultFile(pageResults, ComparisonSummary)
     if (writeSuccessSummary != 0) {
