@@ -219,16 +219,16 @@ object App {
     }
     if (percentageDifference._1.contains("Greater") && (percentageDifference._2 > 10)){
       "Warning: " + valueName + " has increased by: " + percentageDifference._2 + "%.\n" +
-        "Value of: " + valueName + " on the live site is: " + average + "\n" +
+        "Average value of " + valueName + " from last 10 runs is: " + average + "\n" +
         "Value of: " + valueName + " on your branch is: " + branch + "\n\n"
     } else {
       if (percentageDifference._1.contains("Less") && (percentageDifference._2 > 10)) {
         "Pass: " + valueName + " has decreased by: " + percentageDifference._2 + "%.\n" +
-          "Value of " + valueName + " on the live site is: " + average + "\n" +
+          "Average value of " + valueName + " from last 10 runs is: " + average + "\n" +
           "Value of " + valueName + " on your branch is: " + branch + "\n\n"
       } else {
         "Pass: " + "No change of any significance for " + valueName + ".\n\n" +
-          "Value of " + valueName + " on the live site is: " + average + "\n" +
+          "Average value of " + valueName + " from last 10 runs is: " + average + "\n" +
           "Value of " + valueName + " on your branch is: " + branch + "\n\n"
       }
     }
